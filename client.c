@@ -100,12 +100,36 @@ init_ssl(SSL_CTX *ctx, int client_fd)
 
     return ssl;
 }
+
+static int
+test_ssl(SSL *ssl)
+{
+    long res;
+    char http_msg[] = "GET / HTTP/1.1\r\nHost: " HOST "\r\n\r\n";
+    char buff[22281] = "";
+
+    res = SSL_write(ssl, http_msg, sizeof(http_msg));
+    if (res < 0) {
+        perror("ssl write failed");
+        exit(-1);
+    }
+
+    res = SSL_read(ssl, buff, sizeof(buff));
+    if (res < 0) {
+        perror("ssl read failed");
+        exit(-1);
+    }
+
+    printf("recv: %*s", res, buff);
+}
+
 int
 main(int argc, char **argv)
 {
-    SSL_CTX *ctx = NULL;
     long res = 1;
     int client_fd = -1;
+
+    SSL_CTX *ctx = NULL;
     SSL *ssl = NULL;
 
     init_openssl_library();
@@ -116,23 +140,7 @@ main(int argc, char **argv)
 
     ssl  = init_ssl(ctx, client_fd);
 
-    char http_msg[] = "GET / HTTP/1.1\r\nHost: " HOST "\r\n\r\n";
-    res = SSL_write(ssl, http_msg, sizeof(http_msg));
-    if (res < 0) {
-        perror("ssl write failed");
-        exit(-1);
-    }
-
-    char buff[22281] = "";
-
-    memset(buff, 0, sizeof(buff));
-    res = SSL_read(ssl, buff, sizeof(buff));
-    if (res < 0) {
-        perror("ssl read failed");
-        exit(-1);
-    }
-
-    printf("recv: %*s", res, buff);
+    test_ssl(ssl);
 
     return 0;
 }
